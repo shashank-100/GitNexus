@@ -948,6 +948,51 @@ ${['function_signature', 'method_signature', 'abstract_method_signature']
     function: (await_expression
       (member_expression) @type-binding.type))) @type-binding.alias
 
+;; Type bindings — nullable ternary: \`const u = id ? new User() : null\` /
+;; \`const u = id ? findUser(id) : undefined\` / \`const u = c ? user : null\`.
+;; A null/undefined arm adds no receiver type, so the other arm's binding
+;; holds. Limited to a literal null/undefined arm: two value-producing arms
+;; do not establish one receiver type (same rule as Python's \`x if c else None\`).
+(variable_declarator
+  name: (identifier) @type-binding.name
+  value: (ternary_expression
+    consequence: (new_expression
+      constructor: [(identifier) (member_expression)] @type-binding.type)
+    alternative: [(null) (undefined)])) @type-binding.constructor
+
+(variable_declarator
+  name: (identifier) @type-binding.name
+  value: (ternary_expression
+    consequence: [(null) (undefined)]
+    alternative: (new_expression
+      constructor: [(identifier) (member_expression)] @type-binding.type))) @type-binding.constructor
+
+(variable_declarator
+  name: (identifier) @type-binding.name
+  value: (ternary_expression
+    consequence: (call_expression
+      function: [(identifier) (member_expression)] @type-binding.type)
+    alternative: [(null) (undefined)])) @type-binding.alias
+
+(variable_declarator
+  name: (identifier) @type-binding.name
+  value: (ternary_expression
+    consequence: [(null) (undefined)]
+    alternative: (call_expression
+      function: [(identifier) (member_expression)] @type-binding.type))) @type-binding.alias
+
+(variable_declarator
+  name: (identifier) @type-binding.name
+  value: (ternary_expression
+    consequence: (identifier) @type-binding.type
+    alternative: [(null) (undefined)])) @type-binding.alias
+
+(variable_declarator
+  name: (identifier) @type-binding.name
+  value: (ternary_expression
+    consequence: [(null) (undefined)]
+    alternative: (identifier) @type-binding.type)) @type-binding.alias
+
 ;; Type bindings — member-access alias: \`const addr = user.address\`.
 ;; Full \`member_expression\` text feeds compound-receiver Case 3b.
 (variable_declarator
