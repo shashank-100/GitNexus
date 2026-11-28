@@ -71,6 +71,7 @@ import {
   isUnexportedMemberAssignmentValue,
   isUndeclarableThisMemberValue,
 } from '../typescript/cjs-export-assignment.js';
+import { isShadowedUndefinedArm } from '../typescript/nullish-arm.js';
 import { getTreeSitterBufferSize } from '../../constants.js';
 import { parseSourceSafe } from '../../../tree-sitter/safe-parse.js';
 import { synthesizeCallableFlowCaptures } from '../../utils/callable-flow-captures.js';
@@ -943,6 +944,12 @@ export function emitJsScopeCaptures(
       )
     ) {
       continue;
+    }
+
+    // See the matching filter in typescript/captures.ts.
+    if (grouped['@nullish-arm'] !== undefined) {
+      if (isShadowedUndefinedArm(groupedNodes['@nullish-arm'], tree.rootNode)) continue;
+      delete grouped['@nullish-arm'];
     }
 
     // #1876: drop @declaration.function for array higher-order-method

@@ -65,6 +65,7 @@ import {
   isUnexportedMemberAssignmentValue,
   isUndeclarableThisMemberValue,
 } from './cjs-export-assignment.js';
+import { isShadowedUndefinedArm } from './nullish-arm.js';
 import { hasKeyword } from '../../field-extractors/configs/helpers.js';
 import { getTreeSitterBufferSize } from '../../constants.js';
 import { parseSourceSafe } from '../../../tree-sitter/safe-parse.js';
@@ -646,6 +647,13 @@ export function emitTsScopeCaptures(
       )
     ) {
       continue;
+    }
+
+    // `c ? new X() : undefined` adds no receiver type only when `undefined`
+    // is the global, not a parameter or local of that name.
+    if (grouped['@nullish-arm'] !== undefined) {
+      if (isShadowedUndefinedArm(groupedNodes['@nullish-arm'], tree.rootNode)) continue;
+      delete grouped['@nullish-arm'];
     }
 
     // #1876: drop @declaration.function for array higher-order-method

@@ -953,17 +953,19 @@ ${['function_signature', 'method_signature', 'abstract_method_signature']
 ;; A null/undefined arm adds no receiver type, so the other arm's binding
 ;; holds. Limited to a literal null/undefined arm: two value-producing arms
 ;; do not establish one receiver type (same rule as Python's \`x if c else None\`).
+;; \`undefined\` is a name, not a literal: the emitter drops the match when
+;; @nullish-arm reads a local binding of it (see nullish-arm.ts).
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
     consequence: (new_expression
       constructor: [(identifier) (member_expression)] @type-binding.type)
-    alternative: [(null) (undefined)])) @type-binding.constructor
+    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.constructor
 
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
-    consequence: [(null) (undefined)]
+    consequence: [(null) (undefined)] @nullish-arm
     alternative: (new_expression
       constructor: [(identifier) (member_expression)] @type-binding.type))) @type-binding.constructor
 
@@ -972,12 +974,12 @@ ${['function_signature', 'method_signature', 'abstract_method_signature']
   value: (ternary_expression
     consequence: (call_expression
       function: [(identifier) (member_expression)] @type-binding.type)
-    alternative: [(null) (undefined)])) @type-binding.alias
+    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.alias
 
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
-    consequence: [(null) (undefined)]
+    consequence: [(null) (undefined)] @nullish-arm
     alternative: (call_expression
       function: [(identifier) (member_expression)] @type-binding.type))) @type-binding.alias
 
@@ -985,12 +987,12 @@ ${['function_signature', 'method_signature', 'abstract_method_signature']
   name: (identifier) @type-binding.name
   value: (ternary_expression
     consequence: (identifier) @type-binding.type
-    alternative: [(null) (undefined)])) @type-binding.alias
+    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.alias
 
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
-    consequence: [(null) (undefined)]
+    consequence: [(null) (undefined)] @nullish-arm
     alternative: (identifier) @type-binding.type)) @type-binding.alias
 
 ;; Type bindings — member-access alias: \`const addr = user.address\`.

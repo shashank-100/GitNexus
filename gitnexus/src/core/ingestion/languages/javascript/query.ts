@@ -717,18 +717,19 @@ ${unboundCallableQuery('declaration.function')}
 
 ;; Nullable ternary: const u = id ? new User() : null / id ? getUser() : undefined.
 ;; Only a literal null/undefined arm — two value arms do not establish one
-;; receiver type. See the matching block in typescript/query.ts.
+;; receiver type. A locally bound \`undefined\` arm is dropped by the emitter.
+;; See the matching block in typescript/query.ts.
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
     consequence: (new_expression
       constructor: [(identifier) (member_expression)] @type-binding.type)
-    alternative: [(null) (undefined)])) @type-binding.constructor
+    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.constructor
 
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
-    consequence: [(null) (undefined)]
+    consequence: [(null) (undefined)] @nullish-arm
     alternative: (new_expression
       constructor: [(identifier) (member_expression)] @type-binding.type))) @type-binding.constructor
 
@@ -737,12 +738,12 @@ ${unboundCallableQuery('declaration.function')}
   value: (ternary_expression
     consequence: (call_expression
       function: [(identifier) (member_expression)] @type-binding.type)
-    alternative: [(null) (undefined)])) @type-binding.alias
+    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.alias
 
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
-    consequence: [(null) (undefined)]
+    consequence: [(null) (undefined)] @nullish-arm
     alternative: (call_expression
       function: [(identifier) (member_expression)] @type-binding.type))) @type-binding.alias
 
@@ -750,12 +751,12 @@ ${unboundCallableQuery('declaration.function')}
   name: (identifier) @type-binding.name
   value: (ternary_expression
     consequence: (identifier) @type-binding.type
-    alternative: [(null) (undefined)])) @type-binding.alias
+    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.alias
 
 (variable_declarator
   name: (identifier) @type-binding.name
   value: (ternary_expression
-    consequence: [(null) (undefined)]
+    consequence: [(null) (undefined)] @nullish-arm
     alternative: (identifier) @type-binding.type)) @type-binding.alias
 
 ;; Member-access alias: const addr = user.address
