@@ -948,7 +948,7 @@ export function emitJsScopeCaptures(
 
     // See the matching filter in typescript/captures.ts.
     if (grouped['@nullish-arm'] !== undefined) {
-      if (isShadowedUndefinedArm(groupedNodes['@nullish-arm'], tree.rootNode)) continue;
+      if (isShadowedUndefinedArm(groupedNodes['@nullish-arm'])) continue;
       delete grouped['@nullish-arm'];
     }
 

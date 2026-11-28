@@ -6,7 +6,11 @@
  * parameter or local named `undefined` holds another receiver, the arm is not
  * nullish and the value arm alone must not type the variable.
  *
- * A binding of `undefined` in another function leaves this one's global arm alone.
+ * Every binding form counts: parameters (with defaults or destructured), `const`,
+ * destructuring, `for (var … of …)`, which hoists past its loop, and imports.
+ * Names that bind nothing do not: an export specifier, `typeof undefined`, a
+ * named function expression seen from outside it, or a binding in another
+ * function.
  *
  * Every receiver class has a same-named `ping`, so a call that resolves by
  * name alone, or to the wrong arm, shows up as a wrong or extra target.
@@ -46,9 +50,45 @@ export function shadowedLocal(c: boolean) {
   const s = c ? new Svc() : undefined;
   s.ping();
 }
+export function shadowedDefaultParam(c: boolean, undefined: Other = new Other()) {
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function shadowedArrayPattern(c: boolean) {
+  const [undefined] = [new Other()];
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function shadowedPairPattern(c: boolean) {
+  const { a: undefined } = { a: new Other() };
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function shadowedForVar(c: boolean, xs: Other[]) {
+  for (var undefined of xs) {}
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function besideNamedFunctionExpression(c: boolean) {
+  const g = function undefined() {};
+  const s = c ? new Svc() : undefined;
+  s?.ping();
+}
 export function ownUndefined(undefined: Other) { return undefined; }
 export function globalBesideShadow(c: boolean) { const s = c ? new Svc() : undefined; s?.ping(); }
 export function twoValueArms(c: boolean) { const s = c ? new Svc() : new Other(); s.ping(); }
+`;
+
+// Module-level names: an import binds `undefined` for the whole file; an
+// export specifier and a type query bind nothing.
+const TS_IMPORT_SHADOW = `import { Svc, Other as undefined } from './svc';
+export function shadowedByImport(c: boolean) { const s = c ? new Svc() : undefined; s.ping(); }
+`;
+const TS_EXPORT_NAME = `import { Svc } from './svc';
+const x = 1;
+export { x as undefined };
+export type T = typeof undefined;
+export function besideExportSpecifier(c: boolean) { const s = c ? new Svc() : undefined; s?.ping(); }
 `;
 
 const JS_USE = `import { Svc, Other } from './svc.js';
@@ -71,10 +111,54 @@ export function shadowedLocal(c) {
   const s = c ? new Svc() : undefined;
   s.ping();
 }
+export function shadowedDefaultParam(c, undefined = new Other()) {
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function shadowedArrayPattern(c) {
+  const [undefined] = [new Other()];
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function shadowedPairPattern(c) {
+  const { a: undefined } = { a: new Other() };
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function shadowedForVar(c, xs) {
+  for (var undefined of xs) {}
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
+export function besideNamedFunctionExpression(c) {
+  const g = function undefined() {};
+  const s = c ? new Svc() : undefined;
+  s.ping();
+}
 export function ownUndefined(undefined) { return undefined; }
 export function globalBesideShadow(c) { const s = c ? new Svc() : undefined; s.ping(); }
 export function twoValueArms(c) { const s = c ? new Svc() : new Other(); s.ping(); }
 `;
+
+const JS_IMPORT_SHADOW = `import { Svc, Other as undefined } from './svc.js';
+export function shadowedByImport(c) { const s = c ? new Svc() : undefined; s.ping(); }
+`;
+const JS_EXPORT_NAME = `import { Svc } from './svc.js';
+const x = 1;
+export { x as undefined };
+export function besideExportSpecifier(c) { const s = c ? new Svc() : undefined; s.ping(); }
+`;
+
+const SHADOWED = [
+  'shadowedParamAfter',
+  'shadowedParamBefore',
+  'shadowedLocal',
+  'shadowedDefaultParam',
+  'shadowedArrayPattern',
+  'shadowedPairPattern',
+  'shadowedForVar',
+  'shadowedByImport',
+];
 
 describe.each([
   {
@@ -85,6 +169,8 @@ describe.each([
         'ping() {}\n  next(): Svc { return new Svc(); }\n}',
       ),
       'use.ts': TS_USE,
+      'import-shadow.ts': TS_IMPORT_SHADOW,
+      'export-name.ts': TS_EXPORT_NAME,
     },
     resolved: [
       'ctorOrNull',
@@ -94,17 +180,26 @@ describe.each([
       'memberCallOrNull',
       'identOrNull',
       'globalBesideShadow',
+      'besideNamedFunctionExpression',
+      'besideExportSpecifier',
     ],
   },
   {
     lang: 'JavaScript',
-    files: { 'svc.js': CLASSES, 'use.js': JS_USE },
+    files: {
+      'svc.js': CLASSES,
+      'use.js': JS_USE,
+      'import-shadow.js': JS_IMPORT_SHADOW,
+      'export-name.js': JS_EXPORT_NAME,
+    },
     resolved: [
       'ctorOrNull',
       'nullOrCtor',
       'ctorOrUndefined',
       'undefinedOrIdent',
       'globalBesideShadow',
+      'besideNamedFunctionExpression',
+      'besideExportSpecifier',
     ],
   },
 ])('$lang nullish ternary initializers', ({ lang, files, resolved }) => {
@@ -121,13 +216,10 @@ describe.each([
     expect(owners[0]).toContain('Svc.ping');
   });
 
-  it.each(['shadowedParamAfter', 'shadowedParamBefore', 'shadowedLocal'])(
-    '%s: a local named undefined is not a nullish arm',
-    (caller) => {
-      // Either arm may be the receiver, so the value arm alone must not link.
-      expect(pingOwners(caller)).toEqual([]);
-    },
-  );
+  it.each(SHADOWED)('%s: a local named undefined is not a nullish arm', (caller) => {
+    // Either arm may be the receiver, so the value arm alone must not link.
+    expect(pingOwners(caller)).toEqual([]);
+  });
 
   it('two value arms do not establish one receiver type', () => {
     expect(pingOwners('twoValueArms')).toEqual([]);

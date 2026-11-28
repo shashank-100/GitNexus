@@ -652,7 +652,7 @@ export function emitTsScopeCaptures(
     // `c ? new X() : undefined` adds no receiver type only when `undefined`
     // is the global, not a parameter or local of that name.
     if (grouped['@nullish-arm'] !== undefined) {
-      if (isShadowedUndefinedArm(groupedNodes['@nullish-arm'], tree.rootNode)) continue;
+      if (isShadowedUndefinedArm(groupedNodes['@nullish-arm'])) continue;
       delete grouped['@nullish-arm'];
     }
 

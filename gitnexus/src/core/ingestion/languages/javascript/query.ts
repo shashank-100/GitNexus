@@ -49,6 +49,7 @@
 import Parser from 'tree-sitter';
 import { literalPropertyKeyQuery } from '../typescript/identifiers.js';
 import { unboundCallableQuery } from '../typescript/unbound-callables.js';
+import { nullishTernaryQuery } from '../typescript/nullish-ternary-query.js';
 import JS from 'tree-sitter-javascript';
 import {
   ARRAY_METHOD_NOT_ANY_OF_PREDICATE,
@@ -719,46 +720,7 @@ ${unboundCallableQuery('declaration.function')}
 ;; Only a literal null/undefined arm — two value arms do not establish one
 ;; receiver type. A locally bound \`undefined\` arm is dropped by the emitter.
 ;; See the matching block in typescript/query.ts.
-(variable_declarator
-  name: (identifier) @type-binding.name
-  value: (ternary_expression
-    consequence: (new_expression
-      constructor: [(identifier) (member_expression)] @type-binding.type)
-    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.constructor
-
-(variable_declarator
-  name: (identifier) @type-binding.name
-  value: (ternary_expression
-    consequence: [(null) (undefined)] @nullish-arm
-    alternative: (new_expression
-      constructor: [(identifier) (member_expression)] @type-binding.type))) @type-binding.constructor
-
-(variable_declarator
-  name: (identifier) @type-binding.name
-  value: (ternary_expression
-    consequence: (call_expression
-      function: [(identifier) (member_expression)] @type-binding.type)
-    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.alias
-
-(variable_declarator
-  name: (identifier) @type-binding.name
-  value: (ternary_expression
-    consequence: [(null) (undefined)] @nullish-arm
-    alternative: (call_expression
-      function: [(identifier) (member_expression)] @type-binding.type))) @type-binding.alias
-
-(variable_declarator
-  name: (identifier) @type-binding.name
-  value: (ternary_expression
-    consequence: (identifier) @type-binding.type
-    alternative: [(null) (undefined)] @nullish-arm)) @type-binding.alias
-
-(variable_declarator
-  name: (identifier) @type-binding.name
-  value: (ternary_expression
-    consequence: [(null) (undefined)] @nullish-arm
-    alternative: (identifier) @type-binding.type)) @type-binding.alias
-
+${nullishTernaryQuery()}
 ;; Member-access alias: const addr = user.address
 (variable_declarator
   name: (identifier) @type-binding.name
