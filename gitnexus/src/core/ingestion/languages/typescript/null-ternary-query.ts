@@ -1,16 +1,18 @@
 /**
- * Nullish ternary type bindings (`const u = c ? new User() : null`), shared by
- * the JavaScript and TypeScript scope queries. The emitters drop a match whose
- * `@nullish-arm` reads a local binding of `undefined` (see `nullish-arm.ts`).
- */
-
-/**
+ * Null ternary type bindings (`const u = c ? new User() : null`), shared by the
+ * JavaScript and TypeScript scope queries.
+ *
  * Six patterns: the value arm is a constructor, a call or an identifier, and
- * the other arm is `null` / `undefined`, in either position. Two value arms do
- * not establish one receiver type, so they are not matched.
+ * the other arm is `null`, in either position. `null` adds no receiver type, so
+ * the value arm's binding holds. Two value arms do not establish one receiver
+ * type, so they are not matched.
+ *
+ * Only `null`, never `undefined`: `null` is a reserved literal, while
+ * `undefined` is an ordinary name that a parameter, declaration, import or
+ * class can bind, and then the arm may hold another receiver.
  */
-export function nullishTernaryQuery(): string {
-  const nullish = '[(null) (undefined)] @nullish-arm';
+export function nullTernaryQuery(): string {
+  const nullArm = '(null)';
   const arms = [
     [
       `(new_expression
@@ -27,8 +29,8 @@ export function nullishTernaryQuery(): string {
   return arms
     .flatMap(([value, anchor]) =>
       [
-        [value, nullish],
-        [nullish, value],
+        [value, nullArm],
+        [nullArm, value],
       ].map(
         ([consequence, alternative]) => `
 (variable_declarator

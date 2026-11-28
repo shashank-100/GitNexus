@@ -53,7 +53,7 @@
 import Parser from 'tree-sitter';
 import { unboundCallableQuery } from './unbound-callables.js';
 import { literalPropertyKeyQuery } from './identifiers.js';
-import { nullishTernaryQuery } from './nullish-ternary-query.js';
+import { nullTernaryQuery } from './null-ternary-query.js';
 import TS from 'tree-sitter-typescript';
 import {
   ARRAY_METHOD_NOT_ANY_OF_PREDICATE,
@@ -949,14 +949,12 @@ ${['function_signature', 'method_signature', 'abstract_method_signature']
     function: (await_expression
       (member_expression) @type-binding.type))) @type-binding.alias
 
-;; Type bindings — nullable ternary: \`const u = id ? new User() : null\` /
-;; \`const u = id ? findUser(id) : undefined\` / \`const u = c ? user : null\`.
-;; A null/undefined arm adds no receiver type, so the other arm's binding
-;; holds. Limited to a literal null/undefined arm: two value-producing arms
-;; do not establish one receiver type (same rule as Python's \`x if c else None\`).
-;; \`undefined\` is a name, not a literal: the emitter drops the match when
-;; @nullish-arm reads a local binding of it (see nullish-arm.ts).
-${nullishTernaryQuery()}
+;; Type bindings — null ternary: \`const u = id ? new User() : null\` /
+;; \`const u = id ? findUser(id) : null\` / \`const u = c ? user : null\`.
+;; A null arm adds no receiver type, so the other arm's binding holds. Limited
+;; to a literal null arm (same rule as Python's \`x if c else None\`); see
+;; null-ternary-query.ts for why \`undefined\` is excluded.
+${nullTernaryQuery()}
 ;; Type bindings — member-access alias: \`const addr = user.address\`.
 ;; Full \`member_expression\` text feeds compound-receiver Case 3b.
 (variable_declarator

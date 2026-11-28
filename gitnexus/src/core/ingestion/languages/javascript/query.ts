@@ -49,7 +49,7 @@
 import Parser from 'tree-sitter';
 import { literalPropertyKeyQuery } from '../typescript/identifiers.js';
 import { unboundCallableQuery } from '../typescript/unbound-callables.js';
-import { nullishTernaryQuery } from '../typescript/nullish-ternary-query.js';
+import { nullTernaryQuery } from '../typescript/null-ternary-query.js';
 import JS from 'tree-sitter-javascript';
 import {
   ARRAY_METHOD_NOT_ANY_OF_PREDICATE,
@@ -716,11 +716,9 @@ ${unboundCallableQuery('declaration.function')}
     (call_expression
       function: (member_expression) @type-binding.type))) @type-binding.alias
 
-;; Nullable ternary: const u = id ? new User() : null / id ? getUser() : undefined.
-;; Only a literal null/undefined arm — two value arms do not establish one
-;; receiver type. A locally bound \`undefined\` arm is dropped by the emitter.
+;; Null ternary: const u = id ? new User() : null / id ? getUser() : null.
 ;; See the matching block in typescript/query.ts.
-${nullishTernaryQuery()}
+${nullTernaryQuery()}
 ;; Member-access alias: const addr = user.address
 (variable_declarator
   name: (identifier) @type-binding.name
